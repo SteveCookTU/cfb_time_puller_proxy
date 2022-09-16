@@ -1,9 +1,8 @@
 use std::{env, fs};
-use std::fs::File;
-use std::io::BufReader;
 use std::time::Duration;
 use acme_micro::{Certificate, create_p384_key, Directory, DirectoryUrl};
 use actix_cors::Cors;
+use actix_files::Files;
 use actix_web::{get, web, HttpServer, Responder, App, HttpResponse, rt};
 use actix_web::http::header;
 use anyhow::anyhow;
