@@ -44,7 +44,7 @@ struct GameMedia {
 
 #[derive(Deserialize)]
 struct Play {
-    wallclock: String,
+    wallclock: Option<String>,
 }
 
 #[get("/teams")]
@@ -116,31 +116,35 @@ async fn game_time(info: web::Query<TimeReq>) -> impl Responder {
                     if let Ok(plays) = plays {
                         let first = plays.first().unwrap();
                         let last = plays.last().unwrap();
-                        let kickoff_time =
-                            OffsetDateTime::parse(&first.wallclock, &well_known::Rfc3339)
-                                .expect("Failed to parse kickoff time");
-                        let kickoff_time_trans =
-                            kickoff_time.to_offset(UtcOffset::from_hms(info.offset, 0, 0).unwrap());
+                        if let Some(first_clock) = first.wallclock.as_ref() {
+                            if let Some(last_clock) = last.wallclock.as_ref() {
+                                let kickoff_time =
+                                    OffsetDateTime::parse(first_clock, &well_known::Rfc3339)
+                                        .expect("Failed to parse kickoff time");
+                                let kickoff_time_trans =
+                                    kickoff_time.to_offset(UtcOffset::from_hms(info.offset, 0, 0).unwrap());
 
-                        response.kickoff =
-                            format!("{:0>2}:{:0>2}", kickoff_time.hour(), kickoff_time.minute());
-                        response.kickoff_trans = format!(
-                            "{:0>2}:{:0>2}",
-                            kickoff_time_trans.hour(),
-                            kickoff_time_trans.minute()
-                        );
+                                response.kickoff =
+                                    format!("{:0>2}:{:0>2}", kickoff_time.hour(), kickoff_time.minute());
+                                response.kickoff_trans = format!(
+                                    "{:0>2}:{:0>2}",
+                                    kickoff_time_trans.hour(),
+                                    kickoff_time_trans.minute()
+                                );
 
-                        let end_time = OffsetDateTime::parse(&last.wallclock, &well_known::Rfc3339)
-                            .expect("Failed to parse end time");
-                        let end_time_trans =
-                            end_time.to_offset(UtcOffset::from_hms(info.offset, 0, 0).unwrap());
+                                let end_time = OffsetDateTime::parse(last_clock, &well_known::Rfc3339)
+                                    .expect("Failed to parse end time");
+                                let end_time_trans =
+                                    end_time.to_offset(UtcOffset::from_hms(info.offset, 0, 0).unwrap());
 
-                        response.end = format!("{:0>2}:{:0>2}", end_time.hour(), end_time.minute());
-                        response.end_trans = format!(
-                            "{:0>2}:{:0>2}",
-                            end_time_trans.hour(),
-                            end_time_trans.minute()
-                        );
+                                response.end = format!("{:0>2}:{:0>2}", end_time.hour(), end_time.minute());
+                                response.end_trans = format!(
+                                    "{:0>2}:{:0>2}",
+                                    end_time_trans.hour(),
+                                    end_time_trans.minute()
+                                );
+                            }
+                        }
                     } else {
                         println!("Failed to parse plays");
                     }
