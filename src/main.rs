@@ -149,7 +149,7 @@ async fn game_time(info: web::Query<TimeReq>) -> impl Responder {
 async fn main() -> anyhow::Result<()> {
 
     let email = "steviecook210@gmail.com";
-    let domain = "18.191.220.43";
+    let domain = "ec2-18-191-220-43.us-east-2.compute.amazonaws.com";
 
     //   Load keys
     // ==============================================
