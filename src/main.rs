@@ -220,7 +220,7 @@ pub async fn gen_tls_cert(user_email: &str, user_domain: &str) -> anyhow::Result
                 .show_files_listing(),
         )
     })
-        .bind((domain, 80))?
+        .bind(("0.0.0.0", 80))?
         .shutdown_timeout(0)
         .run();
 
