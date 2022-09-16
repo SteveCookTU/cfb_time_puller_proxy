@@ -141,7 +141,11 @@ async fn game_time(info: web::Query<TimeReq>) -> impl Responder {
                             end_time_trans.hour(),
                             end_time_trans.minute()
                         );
+                    } else {
+                        println!("Failed to parse plays");
                     }
+                } else {
+                    println!("Plays response failed");
                 }
 
                 results.push(response);
