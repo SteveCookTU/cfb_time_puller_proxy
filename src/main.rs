@@ -15,8 +15,8 @@ use time::{OffsetDateTime, UtcOffset};
 pub struct TimeReq {
     year: u16,
     week: u8,
-    team: String,
     offset: i8,
+    outlet: String,
 }
 
 #[derive(Debug, Serialize, Default)]
@@ -28,11 +28,18 @@ pub struct TimeResp {
     start_trans: String,
     kickoff_trans: String,
     end_trans: String,
+    date: String,
 }
 
 #[derive(Deserialize)]
-struct Game {
-    start_date: String,
+struct GameMedia {
+    #[serde(rename = "homeTeam")]
+    home_team: String,
+    #[serde(rename = "awayTeam")]
+    away_team: String,
+    #[serde(rename = "startTime")]
+    start_time: String,
+    outlet: String,
 }
 
 #[derive(Deserialize)]
@@ -65,25 +72,29 @@ async fn game_time(info: web::Query<TimeReq>) -> impl Responder {
 
     let client = Client::new();
     let temp = client.get(format!(
-        "https://api.collegefootballdata.com/games?year={}&week={}&seasonType=regular&team={}",
-        info.year, info.week, info.team
+        "https://api.collegefootballdata.com/games?year={}&week={}&seasonType=regular&mediaType=tv",
+        info.year, info.week
     ))
         .bearer_auth(token.clone())
         .send().await;
 
-    let mut response = TimeResp::default();
-
     if let Ok(resp) = temp {
-        let game = resp.json::<Vec<Game>>().await;
-        if let Ok(game) = game {
-            if !game.is_empty() {
+        let game_media = resp.json::<Vec<GameMedia>>().await;
+        if let Ok(game_media) = game_media {
+            let mut results = Vec::new();
+            for media in game_media {
+                let mut response = TimeResp::default();
+                if media.outlet != info.outlet {
+                    continue;
+                }
+
                 let start_time =
-                    OffsetDateTime::parse(&game.first().unwrap().start_date, &well_known::Rfc3339)
+                    OffsetDateTime::parse(&media.start_time, &well_known::Rfc3339)
                         .expect("Failed to parse start date");
                 let start_time_trans =
                     start_time.to_offset(UtcOffset::from_hms(info.offset, 0, 0).unwrap());
 
-                response.team = info.team.clone();
+                response.team = format!("{} @ {}", media.away_team, media.home_team);
                 response.start = format!("{:0>2}:{:0>2}", start_time.hour(), start_time.minute());
                 response.start_trans = format!(
                     "{:0>2}:{:0>2}",
@@ -91,11 +102,13 @@ async fn game_time(info: web::Query<TimeReq>) -> impl Responder {
                     start_time_trans.minute()
                 );
 
+                response.date = start_time_trans.date().to_string();
+
                 let temp = client.get(format!(
                     "https://api.collegefootballdata.com/plays?seasonType=regular&year={}&week={}&team={}",
-                    info.year, info.week, info.team
+                    info.year, info.week, media.home_team
                 ))
-                    .bearer_auth(token)
+                    .bearer_auth(token.clone())
                     .send().await;
 
                 if let Ok(resp) = temp {
@@ -131,10 +144,9 @@ async fn game_time(info: web::Query<TimeReq>) -> impl Responder {
                     }
                 }
 
-                HttpResponse::Ok().body(serde_json::to_string(&response).unwrap())
-            } else {
-                HttpResponse::Ok().body("")
+                results.push(response);
             }
+            HttpResponse::Ok().body(serde_json::to_string(&results).unwrap())
         } else {
             HttpResponse::Ok().body("")
         }
