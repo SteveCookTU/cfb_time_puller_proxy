@@ -186,7 +186,7 @@ async fn main() -> anyhow::Result<()> {
             .max_age(3600);
 
         App::new().wrap(cors).service(teams).service(game_time)
-    }).bind_openssl(("0.0.0.0", 8080), config)?
+    }).bind_openssl(("0.0.0.0", 8080), ssl_builder)?
         .run();
 
     let srv_handle = srv.handle();
