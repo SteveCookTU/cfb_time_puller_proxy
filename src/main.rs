@@ -149,7 +149,7 @@ async fn game_time(info: web::Query<TimeReq>) -> impl Responder {
 async fn main() -> anyhow::Result<()> {
 
     let email = "steviecook210@gmail.com";
-    let domain = "18.191.220.43";
+    let domain = "war-helper.com";
 
     //   Load keys
     // ==============================================
@@ -185,7 +185,7 @@ async fn main() -> anyhow::Result<()> {
             .max_age(3600);
 
         App::new().wrap(cors).service(teams).service(game_time)
-    }).bind_openssl(("0.0.0.0", 8080), ssl_builder)?
+    }).bind_openssl(("0.0.0.0", 80), ssl_builder)?
         .run();
 
     let srv_handle = srv.handle();
