@@ -53,6 +53,7 @@ async fn teams() -> impl Responder {
     if let Ok(resp) = temp {
         HttpResponse::Ok().body(resp.text().await.unwrap())
     } else {
+        println!("Failed to get response");
         HttpResponse::BadRequest().finish()
     }
 }
