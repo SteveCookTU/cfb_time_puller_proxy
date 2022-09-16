@@ -171,8 +171,8 @@ fn load_rustls_config() -> ServerConfig {
     let path = env::var("PEM_DIR").unwrap();
 
     // load TLS key/cert files
-    let cert_file = &mut BufReader::new(File::open(format!("{}/rootCA.pem", path)).unwrap());
-    let key_file = &mut BufReader::new(File::open(format!("{}/rootCA-key.pem", path)).unwrap());
+    let cert_file = &mut BufReader::new(File::open(format!("{}/cert.pem", path)).unwrap());
+    let key_file = &mut BufReader::new(File::open(format!("{}/key.pem", path)).unwrap());
 
     // convert files to key/cert objects
     let cert_chain = certs(cert_file)
