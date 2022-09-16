@@ -149,7 +149,7 @@ async fn game_time(info: web::Query<TimeReq>) -> impl Responder {
 async fn main() -> anyhow::Result<()> {
 
     let email = "steviecook210@gmail.com";
-    let domain = "ec2-18-191-220-43.us-east-2.compute.amazonaws.com";
+    let domain = "18.191.220.43";
 
     //   Load keys
     // ==============================================
@@ -205,8 +205,6 @@ async fn main() -> anyhow::Result<()> {
 pub async fn gen_tls_cert(user_email: &str, user_domain: &str) -> anyhow::Result<Certificate> {
     // Create acme-challenge dir.
     fs::create_dir("./acme-challenge").unwrap();
-
-    let domain = user_domain.to_string();
 
     // Create temporary Actix Web server for ACME challenge.
     let srv = HttpServer::new(|| {
