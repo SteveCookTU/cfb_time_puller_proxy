@@ -188,7 +188,7 @@ async fn main() -> std::io::Result<()> {
             .max_age(3600);
 
         App::new().wrap(cors).service(teams).service(game_time)
-    }).bind_rustls(("0.0.0.0", 80), config)?
+    }).bind_rustls(("0.0.0.0", 8080), config)?
         .run().await
 
 }
