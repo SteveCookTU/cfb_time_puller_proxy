@@ -1,5 +1,7 @@
 use std::env;
+use actix_cors::Cors;
 use actix_web::{get, web, HttpServer, Responder, App, HttpResponse};
+use actix_web::http::header;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use time::format_description::well_known;
@@ -138,8 +140,17 @@ async fn game_time(info: web::Query<TimeReq>) -> impl Responder {
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
+
     HttpServer::new(|| {
-        App::new().service(teams).service(game_time)
+
+        let cors = Cors::default()
+            .allow_any_origin()
+            .allowed_methods(vec!["GET"])
+            .allowed_headers(vec![header::AUTHORIZATION, header::ACCEPT])
+            .allowed_header(header::CONTENT_TYPE)
+            .max_age(3600);
+
+        App::new().wrap(cors).service(teams).service(game_time)
     }).bind(("0.0.0.0", 8080))?
         .run()
         .await
