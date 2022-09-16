@@ -72,7 +72,7 @@ async fn game_time(info: web::Query<TimeReq>) -> impl Responder {
 
     let client = Client::new();
     let temp = client.get(format!(
-        "https://api.collegefootballdata.com/games?year={}&week={}&seasonType=regular&mediaType=tv",
+        "https://api.collegefootballdata.com/games/media?year={}&week={}&seasonType=regular&mediaType=tv",
         info.year, info.week
     ))
         .bearer_auth(token.clone())
@@ -148,7 +148,7 @@ async fn game_time(info: web::Query<TimeReq>) -> impl Responder {
             }
             HttpResponse::Ok().body(serde_json::to_string(&results).unwrap())
         } else {
-            HttpResponse::Ok().body("")
+            HttpResponse::Ok().body("Parse error")
         }
     } else {
         HttpResponse::Ok().body("")
