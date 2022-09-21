@@ -1,13 +1,13 @@
-use std::env;
-use std::fs::File;
-use std::io::BufReader;
 use actix_cors::Cors;
-use actix_web::{get, web, HttpServer, Responder, App, HttpResponse};
 use actix_web::http::header;
+use actix_web::{get, web, App, HttpResponse, HttpServer, Responder};
 use reqwest::Client;
 use rustls::{Certificate, PrivateKey, ServerConfig};
 use rustls_pemfile::{certs, pkcs8_private_keys};
 use serde::{Deserialize, Serialize};
+use std::env;
+use std::fs::File;
+use std::io::BufReader;
 use time::format_description::well_known;
 use time::{OffsetDateTime, UtcOffset};
 
@@ -49,13 +49,14 @@ struct Play {
 
 #[get("/teams")]
 async fn teams() -> impl Responder {
-
     let token = env::var("CFB_TOKEN").unwrap();
 
     let client = Client::new();
-    let temp = client.get("https://api.collegefootballdata.com/teams/fbs?year=2022")
+    let temp = client
+        .get("https://api.collegefootballdata.com/teams/fbs?year=2022")
         .bearer_auth(token)
-        .send().await;
+        .send()
+        .await;
 
     if let Ok(resp) = temp {
         HttpResponse::Ok().body(resp.text().await.unwrap())
@@ -67,7 +68,6 @@ async fn teams() -> impl Responder {
 
 #[get("/time")]
 async fn game_time(info: web::Query<TimeReq>) -> impl Responder {
-
     let token = env::var("CFB_TOKEN").unwrap();
 
     let client = Client::new();
@@ -88,9 +88,8 @@ async fn game_time(info: web::Query<TimeReq>) -> impl Responder {
                     continue;
                 }
 
-                let start_time =
-                    OffsetDateTime::parse(&media.start_time, &well_known::Rfc3339)
-                        .expect("Failed to parse start date");
+                let start_time = OffsetDateTime::parse(&media.start_time, &well_known::Rfc3339)
+                    .expect("Failed to parse start date");
                 let start_time_trans =
                     start_time.to_offset(UtcOffset::from_hms(info.offset, 0, 0).unwrap());
 
@@ -114,36 +113,48 @@ async fn game_time(info: web::Query<TimeReq>) -> impl Responder {
                 if let Ok(resp) = temp {
                     let plays = resp.json::<Vec<Play>>().await;
                     if let Ok(plays) = plays {
-                        let first = plays.first().unwrap();
-                        let last = plays.last().unwrap();
-                        if let Some(first_clock) = first.wallclock.as_ref() {
-                            if let Some(last_clock) = last.wallclock.as_ref() {
-                                let kickoff_time =
-                                    OffsetDateTime::parse(first_clock, &well_known::Rfc3339)
-                                        .expect("Failed to parse kickoff time");
-                                let kickoff_time_trans =
-                                    kickoff_time.to_offset(UtcOffset::from_hms(info.offset, 0, 0).unwrap());
+                        if !plays.is_empty() {
+                            let first = plays.first().unwrap();
+                            let last = plays.last().unwrap();
+                            if let Some(first_clock) = first.wallclock.as_ref() {
+                                if let Some(last_clock) = last.wallclock.as_ref() {
+                                    let kickoff_time =
+                                        OffsetDateTime::parse(first_clock, &well_known::Rfc3339)
+                                            .expect("Failed to parse kickoff time");
+                                    let kickoff_time_trans = kickoff_time
+                                        .to_offset(UtcOffset::from_hms(info.offset, 0, 0).unwrap());
 
-                                response.kickoff =
-                                    format!("{:0>2}:{:0>2}", kickoff_time.hour(), kickoff_time.minute());
-                                response.kickoff_trans = format!(
-                                    "{:0>2}:{:0>2}",
-                                    kickoff_time_trans.hour(),
-                                    kickoff_time_trans.minute()
-                                );
+                                    response.kickoff = format!(
+                                        "{:0>2}:{:0>2}",
+                                        kickoff_time.hour(),
+                                        kickoff_time.minute()
+                                    );
+                                    response.kickoff_trans = format!(
+                                        "{:0>2}:{:0>2}",
+                                        kickoff_time_trans.hour(),
+                                        kickoff_time_trans.minute()
+                                    );
 
-                                let end_time = OffsetDateTime::parse(last_clock, &well_known::Rfc3339)
-                                    .expect("Failed to parse end time");
-                                let end_time_trans =
-                                    end_time.to_offset(UtcOffset::from_hms(info.offset, 0, 0).unwrap());
+                                    let end_time =
+                                        OffsetDateTime::parse(last_clock, &well_known::Rfc3339)
+                                            .expect("Failed to parse end time");
+                                    let end_time_trans = end_time
+                                        .to_offset(UtcOffset::from_hms(info.offset, 0, 0).unwrap());
 
-                                response.end = format!("{:0>2}:{:0>2}", end_time.hour(), end_time.minute());
-                                response.end_trans = format!(
-                                    "{:0>2}:{:0>2}",
-                                    end_time_trans.hour(),
-                                    end_time_trans.minute()
-                                );
+                                    response.end = format!(
+                                        "{:0>2}:{:0>2}",
+                                        end_time.hour(),
+                                        end_time.minute()
+                                    );
+                                    response.end_trans = format!(
+                                        "{:0>2}:{:0>2}",
+                                        end_time_trans.hour(),
+                                        end_time_trans.minute()
+                                    );
+                                }
                             }
+                        } else {
+                            println!("No plays available");
                         }
                     } else {
                         println!("Failed to parse plays");
@@ -196,11 +207,9 @@ fn load_rustls_config() -> ServerConfig {
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-
     let config = load_rustls_config();
 
     HttpServer::new(|| {
-
         let cors = Cors::default()
             .allow_any_origin()
             .allowed_methods(vec!["GET"])
@@ -209,7 +218,8 @@ async fn main() -> std::io::Result<()> {
             .max_age(3600);
 
         App::new().wrap(cors).service(teams).service(game_time)
-    }).bind_rustls(("0.0.0.0", 443), config)?
-        .run().await
-
+    })
+    .bind_rustls(("0.0.0.0", 443), config)?
+    .run()
+    .await
 }
