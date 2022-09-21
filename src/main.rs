@@ -105,7 +105,7 @@ async fn game_time(info: web::Query<TimeReq>) -> impl Responder {
 
                 let temp = client.get(format!(
                     "https://api.collegefootballdata.com/plays?seasonType=regular&year={}&week={}&team={}",
-                    info.year, info.week, media.home_team.trim()
+                    info.year, info.week, media.home_team.trim().replace('&', "%26")
                 ))
                     .bearer_auth(token.clone())
                     .send().await;
